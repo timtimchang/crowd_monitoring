@@ -3,71 +3,83 @@ import matplotlib.pyplot as plt
 import glob
 import os
 import csv
-# data path: ["GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-ohio/", "GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-purdue/"]
 
-csvpath = "EECS 598_Data-MichiganOSU.csv"
+class GenJSON:
 
-#prevEndTime = 0
-#seg_data = []
-#times = []
+    data_paths = {'OSU': "GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-ohio/", 'Purdue': "GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-purdue/"}
+    csv_paths = {'OSU': "EECS 598_Data-MichiganOSU.csv", 'Purdue': "EECS 598_Data-MichiganOSU.csv"}
 
-timesDict = {}
-labelsDict = {}
+    opponent = ''
+    timesDict = {}
+    labelsDict = {}
 
-for i, fp in enumerate(glob.glob("GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-ohio/*")[:]):
-    numSamples = 0
-    print(fp)
-    f = open(fp)
-    data = json.load(f)
-    startTime = data[0]['timestamp']
-    endTime = data[-1]['timestamp'] + len(data[-1]['data']) # account for last set of samples (1ms per sample)
+    def run(self):
+        print("Select opponent to generate JSONs: ")
+        print("    OSU\n    Purdue")
+        self.opponent = input()
+        if (self.opponent not in self.data_paths):
+            print("Please input a valid opponent")
+            for opp in data_paths:
+                print(opp)
+            return
 
-    #print(startTime)
-    #print(endTime)
-    #print(startTime - prevEndTime)
-    #prevEndTime = endTime
-    #for d in data:
-    #    seg_data += d['data']
-    #    numSamples += len(d['data'])
-    #times += [int(startTime + x*(endTime-startTime)/numSamples) for x in range(numSamples)]
+        # TEMP
+        if (self.opponent == 'Purdue'):
+            print('Purdue data not yet available')
+            return
+        
+        self.populateTimes()
+        self.populateLabels()
+        self.generateJSONs()
 
-    timesDict[fp] = [startTime, endTime]
-    labelsDict[fp] = "Unlabeled"
+    def populateTimes(self):
 
-csv_labels = []
+        for i, fp in enumerate(glob.glob(self.data_paths[self.opponent]+ "/*")[:]):
+            f = open(fp)
+            data = json.load(f)
+            startTime = data[0]['timestamp']
+            endTime = data[-1]['timestamp'] + len(data[-1]['data']) # account for last set of samples (1ms per sample)
 
-# read csv file to a list of dictionaries
-with open(csvpath, 'r') as file:
-    csv_reader = csv.DictReader(file)
-    csv_labels = [row for row in csv_reader]
+            self.timesDict[fp] = [startTime, endTime]
+            self.labelsDict[fp] = "Unlabeled"
 
-for i in range(len(csv_labels)):
-    for file in timesDict:
+    def populateLabels(self):
+        csv_labels = []
 
-        if (i+1 == len(csv_labels) and timesDict[file][0] > int(csv_labels[i]['UNIX Timestamp (ms)'])): # prevent out of range, fix TODO (how to handle end of game files?)
-            # Last file, way past end of game
-            continue
-        elif (timesDict[file][0] > int(csv_labels[i]['UNIX Timestamp (ms)'])):
-            # 15 * 60 * 1000 = 15min in ms
-            if (timesDict[file][1] > int(csv_labels[-1]['UNIX Timestamp (ms)']) + (15 * 60 * 1000)): 
-                continue # discard files past end of game
-            # pick label according to file midpoint
-            if((timesDict[file][1] - (timesDict[file][0]) / 2) + timesDict[file][0] < int(csv_labels[i+1]['UNIX Timestamp (ms)'])):
-                labelsDict[file] = csv_labels[i]['Reaction']
-            else:
-                labelsDict[file] = csv_labels[i+1]['Reaction']
+        # read csv file to a list of dictionaries
+        with open(self.csv_paths[self.opponent], 'r') as file:
+            csv_reader = csv.DictReader(file)
+            csv_labels = [row for row in csv_reader]
 
-# Serializing json
-file_labels = json.dumps(labelsDict, indent=4)
-file_times = json.dumps(timesDict, indent=4)
- 
-# Writing to file labels json
-with open("MICH_OSU_file_labels.json", "w") as outfile:
-    outfile.write(file_labels)
+        for i in range(len(csv_labels)):
+            for file in self.timesDict:
 
-# Writing to file times json
-with open("MICH_OSU_file_times.json", "w") as outfile:
-    outfile.write(file_times)
+                if (i+1 == len(csv_labels) and self.timesDict[file][0] > int(csv_labels[i]['UNIX Timestamp (ms)'])): # prevent out of range, fix TODO (how to handle end of game files?)
+                    # Last file, way past end of game
+                    continue
+                elif (self.timesDict[file][0] > int(csv_labels[i]['UNIX Timestamp (ms)'])):
+                    # 15 * 60 * 1000 = 15min in ms
+                    if (self.timesDict[file][1] > int(csv_labels[-1]['UNIX Timestamp (ms)']) + (15 * 60 * 1000)): 
+                        continue # discard files past end of game
+                    # pick label according to file midpoint
+                    if((self.timesDict[file][1] - (self.timesDict[file][0]) / 2) + self.timesDict[file][0] < int(csv_labels[i+1]['UNIX Timestamp (ms)'])):
+                        self.labelsDict[file] = csv_labels[i]['Reaction']
+                    else:
+                        self.labelsDict[file] = csv_labels[i+1]['Reaction']
+
+    def generateJSONs(self):
+
+        # Serializing json
+        file_labels = json.dumps(self.labelsDict, indent=4)
+        file_times = json.dumps(self.timesDict, indent=4)
+        
+        # Writing to file labels json
+        with open("MICH_"+str(self.opponent)+"_file_labels.json", "w") as outfile:
+            outfile.write(file_labels)
+
+        # Writing to file times json
+        with open("MICH_"+str(self.opponent)+"_file_times.json", "w") as outfile:
+            outfile.write(file_times)
 
 #
 #     # plt.title("S-15")
@@ -80,4 +92,13 @@ with open("MICH_OSU_file_times.json", "w") as outfile:
 # #plt.legend(loc="upper right")
 
 # plt.savefig("plot.png")
+    
+def main():
+    global data_paths
+
+    generator = GenJSON()
+    generator.run()
+
+if __name__ == "__main__":
+    main()
 
