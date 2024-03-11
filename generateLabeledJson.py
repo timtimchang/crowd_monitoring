@@ -14,14 +14,11 @@ class GenJSON:
     labelsDict = {}
 
     def run(self):
-        print("Select opponent to generate JSONs: ")
-        print("    OSU\n    Purdue")
-        self.opponent = input()
-        if (self.opponent not in self.data_paths):
-            print("Please input a valid opponent")
-            for opp in data_paths:
-                print(opp)
-            return
+        while (self.opponent not in self.data_paths):
+            print("Select valid opponent to generate JSONs: ")
+            for opp in self.data_paths:
+                print("    " + opp)
+            self.opponent = input()
 
         # TEMP
         if (self.opponent == 'Purdue'):
@@ -78,7 +75,7 @@ class GenJSON:
             outfile.write(file_labels)
 
         # Writing to file times json
-        with open("MICH_"+str(self.opponent)+"_file_times.json", "w") as outfile:
+        with open("MICH_"+str(self.opponent)+"_file_times.json",'Purdue' "w") as outfile:
             outfile.write(file_times)
 
 #
