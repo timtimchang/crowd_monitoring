@@ -51,15 +51,18 @@ class GenJSON:
         for i in range(len(csv_labels)):
             for file in self.timesDict:
 
-                if (i+1 == len(csv_labels) and self.timesDict[file][0] > int(csv_labels[i]['UNIX Timestamp (ms)'])): # prevent out of range, fix TODO (how to handle end of game files?)
+                # if file timestamp midpoint is within a game time range it assigns that label to the file. TODO Improve this conditional
+                timeMidpoint = ((self.timesDict[file][1] - self.timesDict[file][0]) / 2) + self.timesDict[file][0]
+
+                if (i+1 == len(csv_labels) and timeMidpoint > int(csv_labels[i]['UNIX Timestamp (ms)'])): # prevent out of range, fix TODO (how to handle end of game files?)
                     # Last file, way past end of game
                     continue
-                elif (self.timesDict[file][0] > int(csv_labels[i]['UNIX Timestamp (ms)'])):
+                elif (timeMidpoint > int(csv_labels[i]['UNIX Timestamp (ms)'])):
                     # 15 * 60 * 1000 = 15min in ms
-                    if (self.timesDict[file][1] > int(csv_labels[-1]['UNIX Timestamp (ms)']) + (15 * 60 * 1000)): 
+                    if (timeMidpoint > int(csv_labels[-1]['UNIX Timestamp (ms)']) + (15 * 60 * 1000)): 
                         continue # discard files past end of game
                     # pick label according to file midpoint
-                    if((self.timesDict[file][1] - (self.timesDict[file][0]) / 2) + self.timesDict[file][0] < int(csv_labels[i+1]['UNIX Timestamp (ms)'])):
+                    if(timeMidpoint < int(csv_labels[i+1]['UNIX Timestamp (ms)'])):
                         self.labelsDict[file] = csv_labels[i]['Reaction']
                     else:
                         self.labelsDict[file] = csv_labels[i+1]['Reaction']
@@ -75,7 +78,7 @@ class GenJSON:
             outfile.write(file_labels)
 
         # Writing to file times json
-        with open("MICH_"+str(self.opponent)+"_file_times.json",'Purdue' "w") as outfile:
+        with open("MICH_"+str(self.opponent)+"_file_times.json","w") as outfile:
             outfile.write(file_times)
 
 #
