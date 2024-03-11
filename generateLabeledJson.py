@@ -1,7 +1,5 @@
 import json
-import matplotlib.pyplot as plt
 import glob
-import os
 import csv
 
 class GenJSON:
@@ -24,6 +22,19 @@ class GenJSON:
         if (self.opponent == 'Purdue'):
             print('Purdue data not yet available')
             return
+        
+        self.populateTimes()
+        self.populateLabels()
+        self.generateJSONs()
+    
+    def run(self, opp: str):
+        self.opponent = opp
+        if (self.opponent not in self.data_paths):
+            raise ValueError("Invalid opponent")
+
+        # TEMP
+        if (self.opponent == 'Purdue'):
+            raise ValueError('Purdue data not yet available')
         
         self.populateTimes()
         self.populateLabels()
@@ -80,22 +91,8 @@ class GenJSON:
         # Writing to file times json
         with open("MICH_"+str(self.opponent)+"_file_times.json","w") as outfile:
             outfile.write(file_times)
-
-#
-#     # plt.title("S-15")
-#     # plt.plot(seg_data, label=sensor_fp.split("_")[-1], alpha=0.5)
-# points = list(zip(times, seg_data))
-# plt.plot(points, alpha=0.5)
-
-# plt.xticks()
-# plt.ylim(0000, 5000)
-# #plt.legend(loc="upper right")
-
-# plt.savefig("plot.png")
     
 def main():
-    global data_paths
-
     generator = GenJSON()
     generator.run()
 

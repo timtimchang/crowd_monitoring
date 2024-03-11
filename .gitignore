@@ -1,3 +1,4 @@
 GEOSCOPE_SENSOR_S-23/
 *.xlsx
 *.png
+__pycache__/
