@@ -49,12 +49,17 @@ def main():
     # Ensure labels are up-to-date
     print("Updating relevant JSON files")
     generator = GenJSON()
-    generator.run(opponent)
+    generator.run_noinput(opponent)
     print("Complete")
 
     print("Generating specified visualizations")
     plotter = PlottingAssistant()
+    plotter.reactionPlots(opponent, "Cheering")
+    plotter.reactionPlots(opponent, "Booing")
+    plotter.reactionPlots(opponent, "Moving")
     plotter.reactionPlots(opponent, "Storming")
+    plotter.reactionPlots(opponent, "Ugh")
+    plotter.reactionPlots(opponent, "Postgame")
     print("Complete")
 
 if __name__ == "__main__":

@@ -27,7 +27,7 @@ class GenJSON:
         self.populateLabels()
         self.generateJSONs()
     
-    def run(self, opp: str):
+    def run_noinput(self, opp: str):
         self.opponent = opp
         if (self.opponent not in self.data_paths):
             raise ValueError("Invalid opponent")
@@ -59,24 +59,23 @@ class GenJSON:
             csv_reader = csv.DictReader(file)
             csv_labels = [row for row in csv_reader]
 
-        for i in range(len(csv_labels)):
-            for file in self.timesDict:
+        for file in self.timesDict:
+            for i in range(len(csv_labels)):
 
                 # if file timestamp midpoint is within a game time range it assigns that label to the file. TODO Improve this conditional
                 timeMidpoint = ((self.timesDict[file][1] - self.timesDict[file][0]) / 2) + self.timesDict[file][0]
 
-                if (i+1 == len(csv_labels) and timeMidpoint > int(csv_labels[i]['UNIX Timestamp (ms)'])): # prevent out of range, fix TODO (how to handle end of game files?)
-                    # Last file, way past end of game
-                    continue
-                elif (timeMidpoint > int(csv_labels[i]['UNIX Timestamp (ms)'])):
-                    # 15 * 60 * 1000 = 15min in ms
-                    if (timeMidpoint > int(csv_labels[-1]['UNIX Timestamp (ms)']) + (15 * 60 * 1000)): 
-                        continue # discard files past end of game
-                    # pick label according to file midpoint
-                    if(timeMidpoint < int(csv_labels[i+1]['UNIX Timestamp (ms)'])):
+                if (timeMidpoint > int(csv_labels[i]['UNIX Timestamp (ms)'])): 
+                    if (timeMidpoint < int(csv_labels[i]['UNIX Timestamp (ms)']) + self.minutes_to_ms(1)): 
+                        # Assign label if less than 1 minute past end of current play event and less than 15 minutes past end of game
+
                         self.labelsDict[file] = csv_labels[i]['Reaction']
-                    else:
-                        self.labelsDict[file] = csv_labels[i+1]['Reaction']
+                    elif (timeMidpoint > (int(csv_labels[-1]['UNIX Timestamp (ms)'])) and timeMidpoint < (int(csv_labels[-1]['UNIX Timestamp (ms)']) + self.minutes_to_ms(15))):
+                        # Post game section
+                        self.labelsDict[file] = csv_labels[i]['Reaction'] # storming
+                    elif (timeMidpoint > (int(csv_labels[-1]['UNIX Timestamp (ms)']) + self.minutes_to_ms(15))):
+                        self.labelsDict[file] = "Postgame"
+                    #else leave unlabeled (media timeout, etc.)
 
     def generateJSONs(self):
 
@@ -91,6 +90,9 @@ class GenJSON:
         # Writing to file times json
         with open("MICH_"+str(self.opponent)+"_file_times.json","w") as outfile:
             outfile.write(file_times)
+
+    def minutes_to_ms(self, min: int) -> int:
+        return min * 60 * 1000
     
 def main():
     generator = GenJSON()
