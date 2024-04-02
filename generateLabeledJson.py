@@ -3,13 +3,15 @@ import glob
 import csv
 
 class GenJSON:
-
-    data_paths = {'OSU': "GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-ohio/", 'Purdue': "GEOSCOPE_SENSOR_S-23/GEOSCOPE_SENSOR_S-23-purdue/"}
+    sensor_nodes = ['S-13','S-15','S-16','S-21','S-22','S-23','S-25']
+    data_paths = {'OSU': "GEOSCOPE_SENSOR_S-xx/GEOSCOPE_SENSOR_S-xx-ohio/", 'Purdue': "GEOSCOPE_SENSOR_S-xx/GEOSCOPE_SENSOR_S-xx-purdue/"}
     csv_paths = {'OSU': "EECS 598_Data-MichiganOSU.csv", 'Purdue': "EECS 598_Data-MichiganOSU.csv"}
 
     opponent = ''
     timesDict = {}
     labelsDict = {}
+
+    node = ''
 
     def run(self):
         while (self.opponent not in self.data_paths):
@@ -23,9 +25,14 @@ class GenJSON:
             print('Purdue data not yet available')
             return
         
-        self.populateTimes()
-        self.populateLabels()
-        self.generateJSONs()
+        for node in self.sensor_nodes:
+            self.node = node
+            self.timesDict = {}
+            self.labelsDict = {}
+
+            self.populateTimes()
+            self.populateLabels()
+            self.generateJSONs()
     
     def run_noinput(self, opp: str):
         self.opponent = opp
@@ -42,7 +49,13 @@ class GenJSON:
 
     def populateTimes(self):
 
-        for i, fp in enumerate(glob.glob(self.data_paths[self.opponent]+ "/*")[:]):
+        path = self.data_paths[self.opponent]+ "/*"
+        print(path)
+        path = path.replace("S-xx", self.node)
+        print(self.node)
+        print(path)
+
+        for i, fp in enumerate(glob.glob(path)[:]):
             f = open(fp)
             data = json.load(f)
             startTime = data[0]['timestamp']
@@ -84,11 +97,11 @@ class GenJSON:
         file_times = json.dumps(self.timesDict, indent=4)
         
         # Writing to file labels json
-        with open("MICH_"+str(self.opponent)+"_file_labels.json", "w") as outfile:
+        with open(self.node+"_MICH_"+str(self.opponent)+"_file_labels.json", "w") as outfile:
             outfile.write(file_labels)
 
         # Writing to file times json
-        with open("MICH_"+str(self.opponent)+"_file_times.json","w") as outfile:
+        with open(self.node+"_MICH_"+str(self.opponent)+"_file_times.json","w") as outfile:
             outfile.write(file_times)
 
     def minutes_to_ms(self, min: int) -> int:
@@ -100,4 +113,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
