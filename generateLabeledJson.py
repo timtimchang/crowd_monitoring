@@ -5,7 +5,7 @@ import csv
 class GenJSON:
     sensor_nodes = ['S-13','S-15','S-16','S-21','S-22','S-23','S-25']
     data_paths = {'OSU': "GEOSCOPE_SENSOR_S-xx/GEOSCOPE_SENSOR_S-xx-ohio/", 'Purdue': "GEOSCOPE_SENSOR_S-xx/GEOSCOPE_SENSOR_S-xx-purdue/"}
-    csv_paths = {'OSU': "EECS 598_Data-MichiganOSU.csv", 'Purdue': "EECS 598_Data-MichiganOSU.csv"}
+    csv_paths = {'OSU': "EECS 598_Data-MichiganOSU.csv", 'Purdue': "EECS 598_Data-MichiganPurdue.csv"}
 
     opponent = ''
     timesDict = {}
@@ -21,9 +21,9 @@ class GenJSON:
             self.opponent = input()
 
         # TEMP
-        if (self.opponent == 'Purdue'):
-            print('Purdue data not yet available')
-            return
+        #if (self.opponent == 'Purdue'):
+            #print('Purdue data not yet available')
+            #return
         
         for node in self.sensor_nodes:
             self.node = node
@@ -40,8 +40,8 @@ class GenJSON:
             raise ValueError("Invalid opponent")
 
         # TEMP
-        if (self.opponent == 'Purdue'):
-            raise ValueError('Purdue data not yet available')
+        # if (self.opponent == 'Purdue'):
+        #     raise ValueError('Purdue data not yet available')
         
         self.populateTimes()
         self.populateLabels()
@@ -68,11 +68,17 @@ class GenJSON:
         csv_labels = []
 
         # read csv file to a list of dictionaries
-        with open(self.csv_paths[self.opponent], 'r') as file:
-            csv_reader = csv.DictReader(file)
-            csv_labels = [row for row in csv_reader]
+        if self.opponent != "Purdue":
+            with open(self.csv_paths[self.opponent], 'r') as file:
+                csv_reader = csv.DictReader(file)
+                csv_labels = [row for row in csv_reader]
 
         for file in self.timesDict:
+
+            if self.opponent == "Purdue":
+                self.labelsDict[file] = "Unlabeled"
+                continue
+            
             for i in range(len(csv_labels)):
 
                 # if file timestamp midpoint is within a game time range it assigns that label to the file. TODO Improve this conditional
