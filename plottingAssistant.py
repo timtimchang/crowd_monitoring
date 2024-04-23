@@ -297,7 +297,7 @@ def main():
 
     print("Generating specified visualizations")
     plotter = PlottingAssistant()
-    plotter.reactionPlots(opponent, "Cheering")
+    # plotter.reactionPlots(opponent, "Cheering")
     # plotter.reactionPlots(opponent, "Booing")
     # plotter.reactionPlots(opponent, "Moving")
     # plotter.reactionPlots(opponent, "Storming")
@@ -312,7 +312,7 @@ def main():
     # plotter.plot_f_domain(opponent, "Postgame")
     # plotter.plot_f_domain(opponent, "Unlabeled")
 
-    # plotter.plot_PSD(opponent, "Postgame") 
+    plotter.plot_PSD(opponent, "Postgame") 
 
     print("Complete")
 

@@ -62,44 +62,52 @@ def features_extraction(df):
 
     X = df['data'].values
     
-    _, X_lmax = hl_envelopes_idx(X, dmax=50)
+    _, X_lmax = hl_envelopes_idx(X, dmax=1)
     X_env = X[X_lmax]
 
     ## TIME DOMAIN ##
 
-    Min.append(np.min(X))
-    Max.append(np.max(X))
-    Mean.append(np.mean(X))
-    Rms.append(np.sqrt(np.mean(X**2)))
-    Var.append(np.var(X))
-    Std.append(np.std(X))
-    Power.append(np.mean(X**2))
-    Peak.append(np.max(np.abs(X)))
-    P2p.append(np.ptp(X))
-    CrestFactor.append(np.max(np.abs(X))/np.sqrt(np.mean(X**2)))
-    Skew.append(stats.skew(X))
-    Kurtosis.append(stats.kurtosis(X))
+    Min.append(np.min(X_env))
+    Max.append(np.max(X_env))
+    Mean.append(np.mean(X_env))
+    Rms.append(np.sqrt(np.mean(X_env**2)))
+    Var.append(np.var(X_env))
+    Std.append(np.std(X_env))
+    Power.append(np.mean(X_env**2))
+    Peak.append(np.max(np.abs(X_env)))
+    P2p.append(np.ptp(X_env))
+    CrestFactor.append(np.max(np.abs(X))/np.sqrt(np.mean(X_env**2)))
+    Skew.append(stats.skew(X_env))
+    Kurtosis.append(stats.kurtosis(X_env))
     ## FREQ DOMAIN ##
     ft = fft(X)
-    S = np.abs(ft**2)/len(df)
-    Max_f.append(np.max(S))
+    _, ft_lmax = hl_envelopes_idx(ft, dmax=10)
+    ft_env = ft[ft_lmax]
+    S = np.abs(ft_env**2)/len(df)
+    # Max_f.append(np.max(S))
     Sum_f.append(np.sum(S))
     Mean_f.append(np.mean(S))
     Var_f.append(np.var(S))
     
     Peak_f.append(np.max(np.abs(S)))
-    Skew_f.append(stats.skew(X))
-    Kurtosis_f.append(stats.kurtosis(X))
+    Skew_f.append(stats.skew(X_env))
+    Kurtosis_f.append(stats.kurtosis(X_env))
 
     # freqs = abs(np.fft.fftfreq(len(df['data'])) * sample_rate)[:len(ft)//2]
     # ft_oneside = np.asarray(abs(ft)).squeeze()[:len(ft)//2]
 
     ### PSD Statistics
     f, Pxx_den = signal.periodogram(X, 1000)
-    _, lmax = hl_envelopes_idx(Pxx_den, dmax=50)
+    _, psd_lmax = hl_envelopes_idx(Pxx_den, dmax=10)
 
-    f_env = f[lmax]
-    P_env = Pxx_den[lmax]
+    f_env = f[psd_lmax]
+    P_env = Pxx_den[psd_lmax]
+
+    # plt.plot(X_env)
+    # plt.show()
+    # plt.close()
+    # plt.plot(f, Pxx_den)
+    # plt.show()
 
     integral = cumtrapz(P_env, f_env, initial=0)
     if integral.size == 0:
@@ -107,15 +115,18 @@ def features_extraction(df):
     Q4_value = integral[-1]
 
     Q1_index = 0
-    Q2_index = 0
-    Q3_index = 0
+    Q2_index = 1
+    Q3_index = 2
 
     for val in integral:
         if val < (Q4_value / 4):
             Q1_index += 1 # val < 1/4 total power
-        if val < (Q4_value / 2):
+            Q2_index += 1
+            Q3_index += 1
+        elif val < (Q4_value / 2):
             Q2_index += 1 # val < 1/2 total power
-        if val < (Q4_value * 3/4):
+            Q3_index += 1
+        elif val < (Q4_value * 3/4):
             Q3_index += 1 # val < 3/4 total power
 
     Q1_Pwr_f.append(f_env[Q1_index])
@@ -130,6 +141,7 @@ def features_extraction(df):
     Med2_F_Pwr_f.append(np.sqrt(np.mean(P_env[Q2_index:Q3_index]**2)))
     Low_F_Pwr_f.append(np.sqrt(np.mean(P_env[:Q1_index]**2)))
 
+    Max_f.append(np.max(P_env))
     Highest_Peak_f.append(f_env[np.argmax(np.abs(P_env))])
 
     #Create dataframe from features
@@ -140,38 +152,40 @@ def features_extraction(df):
     return df_features
 
 
-#sensor_nodes = ['S-13','S-15','S-16','S-21','S-22','S-23','S-25']
-sensor_nodes = ['S-23']
+if __name__ == "__main__":
 
-reactions = ["Unlabeled","Booing","Cheering","Postgame","Storming","Ugh","Moving"]
-opponent = "OSU"
+    #sensor_nodes = ['S-13','S-15','S-16','S-21','S-22','S-23','S-25']
+    sensor_nodes = ['S-23']
 
-for node in sensor_nodes:
-    for reaction in reactions:
-        f = open(node+"_MICH_"+str(opponent)+"_file_labels.json")
-        file_labels = json.load(f)
-        plot_count = 0
-        for file in file_labels:
-            if (file_labels[file] != reaction):
-                continue
-            plot_count += 1
+    reactions = ["Unlabeled","Booing","Cheering","Postgame","Storming","Ugh","Moving"]
+    opponent = "OSU"
 
-            f2 = open(file)
-            info = json.load(f2)
-            data = []
-            for d in info:
-                data += [elt / (info[0]['gain']) for elt in d['data']]
-            df = pd.DataFrame({'data': data})
-            mean = df['data'].mean()
-            df['data'] = df['data'] - mean
+    for node in sensor_nodes:
+        for reaction in reactions:
+            f = open(node+"_MICH_"+str(opponent)+"_file_labels.json")
+            file_labels = json.load(f)
+            plot_count = 0
+            for file in file_labels:
+                if (file_labels[file] != reaction):
+                    continue
+                plot_count += 1
 
-            features = features_extraction(df)
+                f2 = open(file)
+                info = json.load(f2)
+                data = []
+                for d in info:
+                    data += [elt / (info[0]['gain']) for elt in d['data']]
+                df = pd.DataFrame({'data': data})
+                mean = df['data'].mean()
+                df['data'] = df['data'] - mean
 
-            try:
-                features.to_csv("supervised_metric_learning/features_csvs/" + str(reaction) + "/" + node+"_"+str(reaction) + str(plot_count) + "_" + str(opponent) +  ".csv")
-            except(OSError):
-                # Create directory if it doesn't exist yet
-                os.makedirs("supervised_metric_learning/features_csvs/" + str(reaction) + "/" )
-                features.to_csv("supervised_metric_learning/features_csvs/" + str(reaction) + "/" + node+"_"+ str(reaction) + str(plot_count) + "_" + str(opponent) +  ".csv")
-    
-print("Completed feature extraction")
+                features = features_extraction(df)
+
+                try:
+                    features.to_csv("supervised_metric_learning/features_csvs/" + str(reaction) + "/" + node+"_"+str(reaction) + str(plot_count) + "_" + str(opponent) +  ".csv")
+                except(OSError):
+                    # Create directory if it doesn't exist yet
+                    os.makedirs("supervised_metric_learning/features_csvs/" + str(reaction) + "/" )
+                    features.to_csv("supervised_metric_learning/features_csvs/" + str(reaction) + "/" + node+"_"+ str(reaction) + str(plot_count) + "_" + str(opponent) +  ".csv")
+
+    print("Completed feature extraction")
